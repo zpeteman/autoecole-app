@@ -1,4 +1,5 @@
 import { Handler } from "$fresh/server.ts";
+import { Database } from "../db/kv.ts";
 
 // In a real application, you would use a secure password hashing library
 // and store the hashed password in a database
@@ -10,25 +11,27 @@ export const handler: Handler = async (req) => {
   const username = formData.get("username");
   const password = formData.get("password");
 
-  // Simple authentication check
-  if (username === "admin") {
-    // Read the password from the file, or use the default if the file doesn't exist
-    const storedPassword = await Deno.readTextFile(PASSWORD_FILE).catch(() => "password");
+  // Initialize database if it's empty
+  if (await Database.isDatabaseEmpty()) {
+    await Database.initializeDatabase();
+  }
+
+  // Get user from database
+  const user = await Database.getUser(username as string);
+  
+  if (user && user.password === password) {
+    // Set a session cookie
+    const headers = new Headers();
+    headers.append("Set-Cookie", "session=authenticated; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400");
     
-    if (password === storedPassword) {
-      // Set a session cookie
-      const headers = new Headers();
-      headers.append("Set-Cookie", "session=authenticated; Path=/; HttpOnly; SameSite=Strict; Max-Age=86400");
-      
-      // Redirect to the home page
-      return new Response(null, {
-        status: 302,
-        headers: {
-          ...Object.fromEntries(headers),
-          "Location": "/",
-        },
-      });
-    }
+    // Redirect to the home page
+    return new Response(null, {
+      status: 302,
+      headers: {
+        ...Object.fromEntries(headers),
+        "Location": "/",
+      },
+    });
   }
 
   // Authentication failed

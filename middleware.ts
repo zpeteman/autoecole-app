@@ -1,7 +1,7 @@
 import { MiddlewareHandlerContext } from "$fresh/server.ts";
 
 // List of paths that don't require authentication
-const PUBLIC_PATHS = ["/login", "/auth", "/logout"];
+const PUBLIC_PATHS = ["/login", "/auth", "/logout", "/api/students"];
 
 export async function handler(
   req: Request,

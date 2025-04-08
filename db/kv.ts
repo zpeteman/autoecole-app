@@ -2,9 +2,45 @@
 import { Student, Exam, Payment } from "./types.ts";
 
 // Initialize Deno KV
-const kv = await Deno.openKv();
+const kv = await Deno.openKv(Deno.env.get("DENO_KV_DATABASE_ID"));
 
 export class Database {
+  static kv = kv;
+
+  // User operations
+  static async createUser(username: string, password: string): Promise<void> {
+    await kv.set(["users", username], { username, password });
+  }
+
+  static async getUser(username: string): Promise<{ username: string; password: string } | null> {
+    const result = await kv.get(["users", username]);
+    return result.value as { username: string; password: string } || null;
+  }
+
+  static async updateUserPassword(username: string, newPassword: string): Promise<void> {
+    const user = await this.getUser(username);
+    if (user) {
+      await kv.set(["users", username], { ...user, password: newPassword });
+    }
+  }
+
+  // Database initialization
+  static async isDatabaseEmpty(): Promise<boolean> {
+    const users = await kv.get(["users", "admin"]);
+    return !users.value;
+  }
+
+  static async initializeDatabase(): Promise<void> {
+    if (await this.isDatabaseEmpty()) {
+      // Create default admin user
+      await this.createUser("admin", "admin123");
+      console.log("Database initialized with default admin account");
+      console.log("Username: admin");
+      console.log("Password: admin123");
+      console.log("IMPORTANT: Please change the password after first login!");
+    }
+  }
+
   // Student operations
   static async createStudent(student: Omit<Student, "id">): Promise<Student> {
     const id = crypto.randomUUID();
