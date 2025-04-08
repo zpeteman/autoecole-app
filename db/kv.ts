@@ -2,7 +2,7 @@
 import { Student, Exam, Payment } from "./types.ts";
 
 // Initialize Deno KV
-const kv = await Deno.openKv(Deno.env.get("DENO_KV_DATABASE_ID"));
+const kv = await Deno.openKv(Deno.env.get("KV_DATABASE_ID"));
 
 export class Database {
   static kv = kv;
