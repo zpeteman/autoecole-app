@@ -108,141 +108,198 @@ export default async function StudentDetail(req: Request, { params }: { params: 
               if (studentData.image_url) {
                 try {
                   const imageUrl = \`/api/students?image=\${studentData.image_url}\`;
-                  // @ts-ignore - jspdf methods
-                  doc.addImage(imageUrl, 'JPEG', 20, currentY, 30, 30);
-                  currentY += 35;
-                } catch (err: unknown) {
-                  console.error('Error adding image:', err);
+                  // Convert image to data URL first
+                  const response = await fetch(imageUrl);
+                  const blob = await response.blob();
+                  const reader = new FileReader();
+                  reader.readAsDataURL(blob);
+                  
+                  reader.onloadend = function() {
+                    try {
+                      // @ts-ignore - jspdf methods
+                      doc.addImage(reader.result, 'JPEG', 20, currentY, 30, 30);
+                      currentY += 35;
+                      
+                      // Continue with the rest of the PDF generation
+                      generatePDFContent();
+                    } catch (err) {
+                      console.error('Error adding image to PDF:', err);
+                      // Continue without the image
+                      generatePDFContent();
+                    }
+                  };
+                  
+                  reader.onerror = function() {
+                    console.error('Error reading image file');
+                    // Continue without the image
+                    generatePDFContent();
+                  };
+                  
+                  // Return early as we'll continue in the onloadend callback
+                  return;
+                } catch (err) {
+                  console.error('Error loading image:', err);
+                  // Continue without the image
+                  generatePDFContent();
                 }
+              } else {
+                // No image, continue with PDF generation
+                generatePDFContent();
               }
               
-              // Add student information in a more compact layout
-              // @ts-ignore - jspdf methods
-              doc.setFontSize(12);
-              const info = [
-                ["Nom:", studentData.name],
-                ["Téléphone:", studentData.phone],
-                ["CIN:", studentData.national_id],
-                ["Statut:", studentData.status === "active" ? "Actif" : "Inactif"],
-                ["Statut de paiement:", studentData.payment_status === "complete" ? "Complet" : 
-                  studentData.payment_status === "partial" ? "Partiel" : "Non défini"],
-                ["Date d'inscription:", new Date(studentData.date_of_registration).toLocaleDateString()],
-                ["Date de naissance:", studentData.birthday ? new Date(studentData.birthday).toLocaleDateString() : "Non spécifiée"],
-                ["Frais totaux:", (studentData.total_fees || 0) + " DH"]
-              ];
-              
-              // Create a table for student information
-              // @ts-ignore - jspdf-autotable methods
-              doc.autoTable({
-                startY: currentY,
-                head: [["Information", "Valeur"]],
-                body: info,
-                theme: 'grid',
-                headStyles: { fillColor: [66, 139, 202], textColor: [255, 255, 255] },
-                styles: { fontSize: 10 },
-                columnStyles: { 0: { fontStyle: 'bold' } }
-              });
-              
-              // Add exams information
-              const examY = doc.lastAutoTable.finalY + 10;
-              doc.setFontSize(14);
-              doc.setTextColor(66, 139, 202);
-              doc.text("Historique des examens", 20, examY);
-              
-              if (examsData.length > 0) {
-                const examHeaders = [["Type", "Date", "Résultat", "Notes"]];
-                const examRows = examsData.map(exam => [
-                  exam.exam_type === "code" ? "Code" : "Conduite",
-                  new Date(exam.exam_date).toLocaleDateString(),
-                  exam.result === "pass" ? "Réussi" : 
-                  exam.result === "fail" ? "Échoué" : "En attente",
-                  exam.notes || ""
-                ]);
+              function generatePDFContent() {
+                // Add student information in a more compact layout
+                // @ts-ignore - jspdf methods
+                doc.setFontSize(12);
+                const info = [
+                  ["Nom:", studentData.name],
+                  ["Téléphone:", studentData.phone],
+                  ["CIN:", studentData.national_id],
+                  ["Statut:", studentData.status === "active" ? "Actif" : "Inactif"],
+                  ["Statut de paiement:", studentData.payment_status === "complete" ? "Complet" : 
+                    studentData.payment_status === "partial" ? "Partiel" : "Non défini"],
+                  ["Date d'inscription:", new Date(studentData.date_of_registration).toLocaleDateString()],
+                  ["Date de naissance:", studentData.birthday ? new Date(studentData.birthday).toLocaleDateString() : "Non spécifiée"],
+                  ["Frais totaux:", (studentData.total_fees || 0) + " DH"]
+                ];
                 
+                // Create a table for student information
+                // @ts-ignore - jspdf-autotable methods
                 doc.autoTable({
-                  startY: examY + 5,
-                  head: examHeaders,
-                  body: examRows,
+                  startY: currentY,
+                  head: [["Information", "Valeur"]],
+                  body: info,
                   theme: 'grid',
                   headStyles: { fillColor: [66, 139, 202], textColor: [255, 255, 255] },
-                  styles: { fontSize: 10 }
-                });
-              } else {
-                doc.setFontSize(10);
-                doc.setTextColor(0, 0, 0);
-                doc.text("Aucun examen enregistré", 20, examY + 10);
-              }
-              
-              // Add payments information
-              const paymentY = doc.lastAutoTable.finalY + 10;
-              doc.setFontSize(14);
-              doc.setTextColor(66, 139, 202);
-              doc.text("Historique des paiements", 20, paymentY);
-              
-              if (paymentsData.length > 0) {
-                const paymentHeaders = [["Date", "Montant", "Type", "Notes"]];
-                const paymentRows = paymentsData.map(payment => [
-                  new Date(payment.payment_date).toLocaleDateString(),
-                  payment.amount + " DH",
-                  payment.payment_type === "cash" ? "Espèces" : "Carte",
-                  payment.notes || ""
-                ]);
-                
-                doc.autoTable({
-                  startY: paymentY + 5,
-                  head: paymentHeaders,
-                  body: paymentRows,
-                  theme: 'grid',
-                  headStyles: { fillColor: [66, 139, 202], textColor: [255, 255, 255] },
-                  styles: { fontSize: 10 }
+                  styles: { fontSize: 10 },
+                  columnStyles: { 0: { fontStyle: 'bold' } }
                 });
                 
-                // Calculate total payments
-                const totalPayments = paymentsData.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-                const totalFees = studentData.total_fees || 0;
-                const remainingFees = totalFees - totalPayments;
+                // Add exams information
+                const examY = doc.lastAutoTable.finalY + 10;
+                // @ts-ignore - jspdf methods
+                doc.setFontSize(14);
+                // @ts-ignore - jspdf methods
+                doc.setTextColor(66, 139, 202);
+                // @ts-ignore - jspdf methods
+                doc.text("Historique des examens", 20, examY);
                 
-                doc.setFontSize(10);
-                doc.setTextColor(0, 0, 0);
-                doc.text("Total des paiements: " + totalPayments.toFixed(2) + " DH", 20, doc.lastAutoTable.finalY + 10);
-                doc.text("Frais totaux: " + totalFees.toFixed(2) + " DH", 20, doc.lastAutoTable.finalY + 15);
-                doc.text("Reste à payer: " + remainingFees.toFixed(2) + " DH", 20, doc.lastAutoTable.finalY + 20);
-              } else {
-                doc.setFontSize(10);
-                doc.setTextColor(0, 0, 0);
-                doc.text("Aucun paiement enregistré", 20, paymentY + 10);
-                doc.text("Frais totaux: " + (studentData.total_fees || 0) + " DH", 20, paymentY + 15);
-                doc.text("Reste à payer: " + (studentData.total_fees || 0) + " DH", 20, paymentY + 20);
+                if (examsData.length > 0) {
+                  const examHeaders = [["Type", "Date", "Résultat", "Notes"]];
+                  const examRows = examsData.map(exam => [
+                    exam.exam_type === "code" ? "Code" : "Conduite",
+                    new Date(exam.exam_date).toLocaleDateString(),
+                    exam.result === "pass" ? "Réussi" : 
+                    exam.result === "fail" ? "Échoué" : "En attente",
+                    exam.notes || ""
+                  ]);
+                  
+                  // @ts-ignore - jspdf-autotable methods
+                  doc.autoTable({
+                    startY: examY + 5,
+                    head: examHeaders,
+                    body: examRows,
+                    theme: 'grid',
+                    headStyles: { fillColor: [66, 139, 202], textColor: [255, 255, 255] },
+                    styles: { fontSize: 10 }
+                  });
+                } else {
+                  // @ts-ignore - jspdf methods
+                  doc.setFontSize(10);
+                  // @ts-ignore - jspdf methods
+                  doc.setTextColor(0, 0, 0);
+                  // @ts-ignore - jspdf methods
+                  doc.text("Aucun examen enregistré", 20, examY + 10);
+                }
+                
+                // Add payments information
+                const paymentY = doc.lastAutoTable.finalY + 10;
+                // @ts-ignore - jspdf methods
+                doc.setFontSize(14);
+                // @ts-ignore - jspdf methods
+                doc.setTextColor(66, 139, 202);
+                // @ts-ignore - jspdf methods
+                doc.text("Historique des paiements", 20, paymentY);
+                
+                if (paymentsData.length > 0) {
+                  const paymentHeaders = [["Date", "Montant", "Type", "Notes"]];
+                  const paymentRows = paymentsData.map(payment => [
+                    new Date(payment.payment_date).toLocaleDateString(),
+                    payment.amount + " DH",
+                    payment.payment_type === "cash" ? "Espèces" : "Carte",
+                    payment.notes || ""
+                  ]);
+                  
+                  // @ts-ignore - jspdf-autotable methods
+                  doc.autoTable({
+                    startY: paymentY + 5,
+                    head: paymentHeaders,
+                    body: paymentRows,
+                    theme: 'grid',
+                    headStyles: { fillColor: [66, 139, 202], textColor: [255, 255, 255] },
+                    styles: { fontSize: 10 }
+                  });
+                  
+                  // Calculate total payments
+                  const totalPayments = paymentsData.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+                  const totalFees = studentData.total_fees || 0;
+                  const remainingFees = totalFees - totalPayments;
+                  
+                  // @ts-ignore - jspdf methods
+                  doc.setFontSize(10);
+                  // @ts-ignore - jspdf methods
+                  doc.setTextColor(0, 0, 0);
+                  // @ts-ignore - jspdf methods
+                  doc.text("Total des paiements: " + totalPayments.toFixed(2) + " DH", 20, doc.lastAutoTable.finalY + 10);
+                  // @ts-ignore - jspdf methods
+                  doc.text("Frais totaux: " + totalFees.toFixed(2) + " DH", 20, doc.lastAutoTable.finalY + 15);
+                  // @ts-ignore - jspdf methods
+                  doc.text("Reste à payer: " + remainingFees.toFixed(2) + " DH", 20, doc.lastAutoTable.finalY + 20);
+                } else {
+                  // @ts-ignore - jspdf methods
+                  doc.setFontSize(10);
+                  // @ts-ignore - jspdf methods
+                  doc.setTextColor(0, 0, 0);
+                  // @ts-ignore - jspdf methods
+                  doc.text("Aucun paiement enregistré", 20, paymentY + 10);
+                  // @ts-ignore - jspdf methods
+                  doc.text("Frais totaux: " + (studentData.total_fees || 0) + " DH", 20, paymentY + 15);
+                  // @ts-ignore - jspdf methods
+                  doc.text("Reste à payer: " + (studentData.total_fees || 0) + " DH", 20, paymentY + 20);
+                }
+                
+                // Add footer with page numbers
+                const pageCount = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= pageCount; i++) {
+                  // @ts-ignore - jspdf methods
+                  doc.setPage(i);
+                  // @ts-ignore - jspdf methods
+                  doc.setFontSize(8);
+                  // @ts-ignore - jspdf methods
+                  doc.setTextColor(128, 128, 128);
+                  // @ts-ignore - jspdf methods
+                  doc.text(
+                    'Page ' + i + ' sur ' + pageCount,
+                    doc.internal.pageSize.width / 2,
+                    doc.internal.pageSize.height - 10,
+                    { align: 'center' }
+                  );
+                }
+                
+                // Save the PDF
+                doc.save(studentData.name.replace(/\s+/g, '_') + "_fiche.pdf");
               }
-              
-              // Add footer with page numbers
-              const pageCount = doc.internal.getNumberOfPages();
-              for (let i = 1; i <= pageCount; i++) {
-                doc.setPage(i);
-                doc.setFontSize(8);
-                doc.setTextColor(128, 128, 128);
-                doc.text(
-                  'Page ' + i + ' sur ' + pageCount,
-                  doc.internal.pageSize.width / 2,
-                  doc.internal.pageSize.height - 10,
-                  { align: 'center' }
-                );
-              }
-              
-              // Save the PDF
-              doc.save(studentData.name.replace(/\s+/g, '_') + "_fiche.pdf");
-            }
 
-            // Add click handler for export button when the DOM is loaded
-            document.addEventListener('DOMContentLoaded', function() {
-              const exportButton = document.querySelector('[data-action="export-pdf"]');
-              if (exportButton) {
-                exportButton.addEventListener('click', function(e) {
-                  e.preventDefault();
-                  exportStudentPDF();
-                });
-              }
-            });
+              // Add click handler for export button when the DOM is loaded
+              document.addEventListener('DOMContentLoaded', function() {
+                const exportButton = document.querySelector('[data-action="export-pdf"]');
+                if (exportButton) {
+                  exportButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    exportStudentPDF();
+                  });
+                }
+              });
           `
         }} />
       </Head>
