@@ -1,8 +1,8 @@
 /// <reference lib="deno.unstable" />
 import { Student, Exam, Payment } from "./types.ts";
 
-// Initialize Deno KV
-const kv = await Deno.openKv(Deno.env.get("KV_DATABASE_ID"));
+// Initialize Deno KV - use default database in production
+const kv = await Deno.openKv();
 
 export class Database {
   static kv = kv;
