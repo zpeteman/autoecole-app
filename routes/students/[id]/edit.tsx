@@ -53,7 +53,7 @@ export default async function EditStudent(req: Request, ctx: { params: { id: str
                               <div class="h-24 w-24 overflow-hidden rounded-full bg-gray-100">
                                 <img
                                   id="preview"
-                                  src={student.image_url || "/placeholder-avatar.png"}
+                                  src={student.image_url ? `/api/students?image=${student.image_url}` : "/placeholder-avatar.png"}
                                   alt="Preview"
                                   class="h-24 w-24 object-cover"
                                 />

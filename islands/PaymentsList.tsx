@@ -195,7 +195,7 @@ export default function PaymentsList() {
                         <div class="w-12 h-12 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
                           {student.image_url ? (
                             <img 
-                              src={student.image_url} 
+                              src={`/api/students?image=${student.image_url}`}
                               alt={student.name} 
                               class="w-full h-full object-cover"
                             />

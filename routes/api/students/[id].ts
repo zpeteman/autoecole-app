@@ -6,24 +6,19 @@ async function saveImage(file: File): Promise<string> {
   const bytes = await file.arrayBuffer();
   const buffer = new Uint8Array(bytes);
   
-  // Create a unique filename
-  const filename = `${crypto.randomUUID()}-${file.name}`;
-  const path = `./static/uploads/${filename}`;
+  // Convert image to base64
+  const base64 = btoa(String.fromCharCode(...buffer));
+  const imageId = crypto.randomUUID();
   
-  // Ensure the uploads directory exists
-  try {
-    await Deno.mkdir("./static/uploads", { recursive: true });
-  } catch (error) {
-    if (!(error instanceof Deno.errors.AlreadyExists)) {
-      throw error;
-    }
-  }
+  // Store in Deno KV
+  await Database.kv.set(["images", imageId], {
+    name: file.name,
+    type: file.type,
+    data: base64
+  });
   
-  // Save the file
-  await Deno.writeFile(path, buffer);
-  
-  // Return the public URL
-  return `/uploads/${filename}`;
+  // Return the image ID that can be used to fetch the image later
+  return imageId;
 }
 
 export const handler: Handlers = {
@@ -35,12 +30,15 @@ export const handler: Handlers = {
     let image_url: string | undefined;
     const imageFile = formData.get("image") as File | null;
     if (imageFile && imageFile.size > 0) {
-      image_url = await saveImage(imageFile);
+      try {
+        image_url = await saveImage(imageFile);
+        console.log("Image saved successfully:", image_url);
+      } catch (error) {
+        console.error("Error saving image:", error);
+        // Continue without image if there's an error
+      }
     }
 
-    // Get the new ID from the form
-    const newId = formData.get("id") as string;
-    
     // Get the existing student
     const existingStudent = await Database.getStudent(id);
     if (!existingStudent) {
@@ -64,33 +62,44 @@ export const handler: Handlers = {
     }
 
     try {
-      // If the ID is being changed, we need to handle this specially
-      if (newId !== id) {
-        // Create a new student with the new ID
-        const newStudent: Omit<Student, "id"> = {
-          ...existingStudent,
-          ...updatedStudent,
-        };
-        
-        // Delete the old student
-        await Database.deleteStudent(id);
-        
-        // Create the new student with the new ID
-        await Database.createStudentWithId(newId, newStudent);
-      } else {
-        // Just update the existing student
-        await Database.updateStudent(id, updatedStudent);
-      }
-      
+      await Database.updateStudent(id, updatedStudent);
       return new Response(null, {
         status: 303,
         headers: {
-          Location: `/students/${newId}`,
+          Location: `/students/${id}`,
         },
       });
     } catch (error) {
       console.error("Error updating student:", error);
-      return new Response("Error updating student", { status: 500 });
+      return new Response(JSON.stringify({ 
+        error: "Error updating student", 
+        details: error instanceof Error ? error.message : String(error)
+      }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
     }
   },
+
+  async DELETE(req, ctx) {
+    const id = ctx.params.id;
+    try {
+      await Database.deleteStudent(id);
+      return new Response(null, {
+        status: 303,
+        headers: {
+          Location: "/students",
+        },
+      });
+    } catch (error) {
+      console.error("Error deleting student:", error);
+      return new Response(JSON.stringify({ 
+        error: "Error deleting student", 
+        details: error instanceof Error ? error.message : String(error)
+      }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+  }
 }; 

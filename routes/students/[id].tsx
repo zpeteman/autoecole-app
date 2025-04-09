@@ -45,46 +45,79 @@ export default async function StudentDetail(req: Request, { params }: { params: 
         <script dangerouslySetInnerHTML={{
           __html: `
             function exportStudentPDF() {
+              // @ts-ignore - jspdf is loaded from CDN
               const { jsPDF } = window.jspdf;
               
               // Create a new PDF document
+              // @ts-ignore - jspdf is loaded from CDN
               const doc = new jsPDF();
               
               // Get student data
-              const studentData = JSON.parse(document.getElementById('student-data').dataset.student);
-              const examsData = JSON.parse(document.getElementById('exams-data').dataset.exams);
-              const paymentsData = JSON.parse(document.getElementById('payments-data').dataset.payments);
+              const studentDataElement = document.getElementById('student-data');
+              const examsDataElement = document.getElementById('exams-data');
+              const paymentsDataElement = document.getElementById('payments-data');
+              
+              if (!studentDataElement?.dataset?.student || !examsDataElement?.dataset?.exams || !paymentsDataElement?.dataset?.payments) {
+                console.error('Required data elements not found');
+                return;
+              }
+
+              interface StudentData {
+                name: string;
+                phone: string;
+                national_id: string;
+                status: string;
+                payment_status: string;
+                date_of_registration: string;
+                birthday?: string;
+                total_fees?: number;
+                image_url?: string;
+              }
+
+              const studentData = JSON.parse(studentDataElement.dataset.student) as StudentData;
+              const examsData = JSON.parse(examsDataElement.dataset.exams);
+              const paymentsData = JSON.parse(paymentsDataElement.dataset.payments);
               
               // Add title with styling
+              // @ts-ignore - jspdf methods
               doc.setFillColor(66, 139, 202);
+              // @ts-ignore - jspdf methods
               doc.rect(0, 0, 210, 30, 'F');
               
               // Add logo
               try {
+                // @ts-ignore - jspdf methods
                 doc.addImage('/favicon.png', 'PNG', 20, 5, 20, 20);
-              } catch (e) {
-                console.error('Error adding logo:', e);
+              } catch (err: unknown) {
+                console.error('Error adding logo:', err);
               }
               
+              // @ts-ignore - jspdf methods
               doc.setTextColor(255, 255, 255);
+              // @ts-ignore - jspdf methods
               doc.setFontSize(24);
+              // @ts-ignore - jspdf methods
               doc.text("Fiche d'étudiant", 105, 20, { align: "center" });
               
               // Reset text color
+              // @ts-ignore - jspdf methods
               doc.setTextColor(0, 0, 0);
               
               // Add student image if exists
-              let yPos = 40;
+              let currentY: number = 40;
               if (studentData.image_url) {
                 try {
-                  doc.addImage(studentData.image_url, 'JPEG', 20, yPos, 30, 30);
-                  yPos += 35;
-                } catch (e) {
-                  console.error('Error adding image:', e);
+                  const imageUrl = \`/api/students?image=\${studentData.image_url}\`;
+                  // @ts-ignore - jspdf methods
+                  doc.addImage(imageUrl, 'JPEG', 20, currentY, 30, 30);
+                  currentY += 35;
+                } catch (err: unknown) {
+                  console.error('Error adding image:', err);
                 }
               }
               
               // Add student information in a more compact layout
+              // @ts-ignore - jspdf methods
               doc.setFontSize(12);
               const info = [
                 ["Nom:", studentData.name],
@@ -99,8 +132,9 @@ export default async function StudentDetail(req: Request, { params }: { params: 
               ];
               
               // Create a table for student information
+              // @ts-ignore - jspdf-autotable methods
               doc.autoTable({
-                startY: yPos,
+                startY: currentY,
                 head: [["Information", "Valeur"]],
                 body: info,
                 theme: 'grid',
@@ -221,7 +255,7 @@ export default async function StudentDetail(req: Request, { params }: { params: 
                 {student.image_url ? (
                   <img
                     class="h-24 w-24 rounded-full object-cover"
-                    src={student.image_url}
+                    src={`/api/students?image=${student.image_url}`}
                     alt={student.name}
                   />
                 ) : (

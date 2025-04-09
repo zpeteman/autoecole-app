@@ -156,7 +156,7 @@ export function StudentsList() {
                         {student.image_url ? (
                           <img
                             class="h-10 w-10 rounded-full object-cover"
-                            src={student.image_url}
+                            src={`/api/students?image=${student.image_url}`}
                             alt={student.name}
                           />
                         ) : (
@@ -208,7 +208,7 @@ export function StudentsList() {
                       {student.image_url ? (
                         <img
                           class="h-12 w-12 rounded-full object-cover"
-                          src={student.image_url}
+                          src={`/api/students?image=${student.image_url}`}
                           alt={student.name}
                         />
                       ) : (
