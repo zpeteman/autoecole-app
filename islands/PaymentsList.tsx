@@ -9,6 +9,7 @@ type Student = DBStudent;
 
 export default function PaymentsList() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
   const [payments, setPayments] = useState<Payment[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,10 +47,25 @@ export default function PaymentsList() {
   // Format payments for export
   const formattedPayments = formatPaymentsForExport(payments, students);
 
-  // Filter payments based on search term
-  const filteredPayments = Object.entries(paymentsByStudent).filter(([studentId]) => {
+  // Filter payments based on search term and selected date
+  const filteredPayments = Object.entries(paymentsByStudent).filter(([studentId, studentPayments]) => {
     const student = students.find((s) => s.id === studentId);
-    return student?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = student?.name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (selectedDate) {
+      const selectedDateObj = new Date(selectedDate);
+      selectedDateObj.setHours(0, 0, 0, 0);
+      
+      const hasPaymentsOnDate = studentPayments.some(payment => {
+        const paymentDate = new Date(payment.payment_date);
+        paymentDate.setHours(0, 0, 0, 0);
+        return paymentDate.getTime() === selectedDateObj.getTime();
+      });
+      
+      return matchesSearch && hasPaymentsOnDate;
+    }
+    
+    return matchesSearch;
   });
 
   // Handle export
@@ -158,6 +174,14 @@ export default function PaymentsList() {
                   class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm((e.target as HTMLInputElement).value)}
+                />
+              </div>
+              <div class="relative flex-grow sm:flex-grow-0">
+                <input
+                  type="date"
+                  class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate((e.target as HTMLInputElement).value)}
                 />
               </div>
               <div class="flex gap-2">
