@@ -62,19 +62,7 @@ export default async function StudentDetail(req: Request, { params }: { params: 
                 return;
               }
 
-              interface StudentData {
-                name: string;
-                phone: string;
-                national_id: string;
-                status: string;
-                payment_status: string;
-                date_of_registration: string;
-                birthday?: string;
-                total_fees?: number;
-                image_url?: string;
-              }
-
-              const studentData = JSON.parse(studentDataElement.dataset.student) as StudentData;
+              const studentData = JSON.parse(studentDataElement.dataset.student);
               const examsData = JSON.parse(examsDataElement.dataset.exams);
               const paymentsData = JSON.parse(paymentsDataElement.dataset.payments);
               
@@ -88,7 +76,7 @@ export default async function StudentDetail(req: Request, { params }: { params: 
               try {
                 // @ts-ignore - jspdf methods
                 doc.addImage('/favicon.png', 'PNG', 20, 5, 20, 20);
-              } catch (err: unknown) {
+              } catch (err) {
                 console.error('Error adding logo:', err);
               }
               
@@ -103,51 +91,9 @@ export default async function StudentDetail(req: Request, { params }: { params: 
               // @ts-ignore - jspdf methods
               doc.setTextColor(0, 0, 0);
               
-              // Add student image if exists
-              let currentY: number = 40;
-              if (studentData.image_url) {
-                try {
-                  const imageUrl = \`/api/students?image=\${studentData.image_url}\`;
-                  // Convert image to data URL first
-                  const response = await fetch(imageUrl);
-                  const blob = await response.blob();
-                  const reader = new FileReader();
-                  reader.readAsDataURL(blob);
-                  
-                  reader.onloadend = function() {
-                    try {
-                      // @ts-ignore - jspdf methods
-                      doc.addImage(reader.result, 'JPEG', 20, currentY, 30, 30);
-                      currentY += 35;
-                      
-                      // Continue with the rest of the PDF generation
-                      generatePDFContent();
-                    } catch (err) {
-                      console.error('Error adding image to PDF:', err);
-                      // Continue without the image
-                      generatePDFContent();
-                    }
-                  };
-                  
-                  reader.onerror = function() {
-                    console.error('Error reading image file');
-                    // Continue without the image
-                    generatePDFContent();
-                  };
-                  
-                  // Return early as we'll continue in the onloadend callback
-                  return;
-                } catch (err) {
-                  console.error('Error loading image:', err);
-                  // Continue without the image
-                  generatePDFContent();
-                }
-              } else {
-                // No image, continue with PDF generation
-                generatePDFContent();
-              }
+              let currentY = 40;
               
-              function generatePDFContent() {
+              function continueWithPDF() {
                 // Add student information in a more compact layout
                 // @ts-ignore - jspdf methods
                 doc.setFontSize(12);
@@ -290,16 +236,40 @@ export default async function StudentDetail(req: Request, { params }: { params: 
                 doc.save(studentData.name.replace(/\s+/g, '_') + "_fiche.pdf");
               }
 
-              // Add click handler for export button when the DOM is loaded
-              document.addEventListener('DOMContentLoaded', function() {
-                const exportButton = document.querySelector('[data-action="export-pdf"]');
-                if (exportButton) {
-                  exportButton.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    exportStudentPDF();
-                  });
-                }
-              });
+              // Handle student image
+              if (studentData.image_url) {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.onload = function() {
+                  try {
+                    // @ts-ignore - jspdf methods
+                    doc.addImage(img, 'JPEG', 20, currentY, 30, 30);
+                    currentY += 35;
+                  } catch (err) {
+                    console.error('Error adding image to PDF:', err);
+                  }
+                  continueWithPDF();
+                };
+                img.onerror = function() {
+                  console.error('Error loading image');
+                  continueWithPDF();
+                };
+                img.src = \`/api/students?image=\${studentData.image_url}\`;
+              } else {
+                continueWithPDF();
+              }
+            }
+
+            // Add click handler for export button when the DOM is loaded
+            document.addEventListener('DOMContentLoaded', function() {
+              const exportButton = document.querySelector('[data-action="export-pdf"]');
+              if (exportButton) {
+                exportButton.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  exportStudentPDF();
+                });
+              }
+            });
           `
         }} />
       </Head>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "preact/hooks";
 import Layout from "../components/Layout.tsx";
 import { Student } from "../db/types.ts";
-import { formatStudentsForExport } from "../utils/export.ts";
+import { formatStudentsForExport, convertToCSV } from "../utils/export.ts";
 
 export function StudentsList() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,6 +47,21 @@ export function StudentsList() {
   // Format students for export
   const formattedStudents = formatStudentsForExport(filteredStudents);
 
+  // Handle export
+  const handleExport = () => {
+    const csvContent = convertToCSV(formattedStudents);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'etudiants.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -91,8 +106,7 @@ export function StudentsList() {
           </div>
           <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
             <button
-              id="export-students-btn"
-              data-students={JSON.stringify(formattedStudents)}
+              onClick={handleExport}
               class="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:w-auto"
             >
               <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

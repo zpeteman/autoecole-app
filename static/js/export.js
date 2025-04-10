@@ -1,3 +1,5 @@
+import { convertToCSV } from "../utils/csv.ts";
+
 // Export functionality
 document.addEventListener('DOMContentLoaded', () => {
   // Export all data button
@@ -47,33 +49,26 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Helper function to convert data to CSV
   function convertToCSV(data) {
-    if (data.length === 0) return "";
+    if (!data || !data.length) return '';
     
-    // Get headers from the first object
     const headers = Object.keys(data[0]);
+    const csvRows = [];
     
-    // Create CSV header row
-    const csvRows = [headers.join(",")];
+    // Add headers
+    csvRows.push(headers.join(','));
     
     // Add data rows
-    for (const item of data) {
+    for (const row of data) {
       const values = headers.map(header => {
-        const value = item[header];
-        // Handle special cases
-        if (value === null || value === undefined) return "";
-        if (typeof value === "object") return JSON.stringify(value);
-        // Escape commas and quotes in string values
-        if (typeof value === "string") {
-          if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-            return `"${value.replace(/"/g, '""')}"`;
-          }
-        }
-        return value;
+        const value = row[header] || '';
+        // Handle special cases and escape quotes
+        const escaped = String(value).replace(/"/g, '""');
+        return `"${escaped}"`;
       });
-      csvRows.push(values.join(","));
+      csvRows.push(values.join(','));
     }
     
-    return csvRows.join("\n");
+    return csvRows.join('\n');
   }
   
   // Function to create summary data for different time periods
@@ -138,4 +133,85 @@ document.addEventListener('DOMContentLoaded', () => {
       };
     });
   }
-}); 
+});
+
+async function exportStudentPDF() {
+  // ... existing code ...
+}
+
+/**
+ * Creates and downloads a CSV file
+ * @param {Array<Object>} data - Data to convert to CSV
+ * @param {string} filename - Name of the file to download
+ */
+function downloadCSV(data, filename) {
+  const csv = convertToCSV(data);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  
+  if (navigator.msSaveBlob) { // IE 10+
+    navigator.msSaveBlob(blob, filename);
+  } else {
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  }
+}
+
+/**
+ * Exports students data as CSV
+ */
+async function exportStudentsCSV() {
+  try {
+    const response = await fetch('/api/students');
+    if (!response.ok) throw new Error('Failed to fetch students data');
+    const students = await response.json();
+    downloadCSV(students, 'students.csv');
+  } catch (error) {
+    console.error('Error exporting students:', error);
+    alert('Failed to export students data');
+  }
+}
+
+/**
+ * Exports exams data as CSV
+ */
+async function exportExamsCSV() {
+  try {
+    const response = await fetch('/api/exams');
+    if (!response.ok) throw new Error('Failed to fetch exams data');
+    const exams = await response.json();
+    downloadCSV(exams, 'exams.csv');
+  } catch (error) {
+    console.error('Error exporting exams:', error);
+    alert('Failed to export exams data');
+  }
+}
+
+/**
+ * Exports payments data as CSV
+ */
+async function exportPaymentsCSV() {
+  try {
+    const response = await fetch('/api/payments');
+    if (!response.ok) throw new Error('Failed to fetch payments data');
+    const payments = await response.json();
+    downloadCSV(payments, 'payments.csv');
+  } catch (error) {
+    console.error('Error exporting payments:', error);
+    alert('Failed to export payments data');
+  }
+}
+
+// Export functions to window object
+window.convertToCSV = convertToCSV;
+window.downloadCSV = downloadCSV;
+window.exportStudentsCSV = exportStudentsCSV;
+window.exportExamsCSV = exportExamsCSV;
+window.exportPaymentsCSV = exportPaymentsCSV; 

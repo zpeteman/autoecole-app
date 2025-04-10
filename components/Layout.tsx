@@ -14,6 +14,7 @@ export default function Layout({ children }: LayoutProps) {
       <Head>
         <title>Auto-École</title>
         <link rel="stylesheet" href="/styles.css" />
+        <script src="/js/export.js" defer></script>
       </Head>
       <div class="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
         {/* Navigation */}

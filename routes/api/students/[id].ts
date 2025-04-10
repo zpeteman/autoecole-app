@@ -23,8 +23,9 @@ async function saveImage(file: File): Promise<string> {
 
 export const handler: Handlers = {
   async POST(req, ctx) {
-    const id = ctx.params.id;
+    const oldId = ctx.params.id;
     const formData = await req.formData();
+    const newId = formData.get("id") as string;
     
     // Handle image upload
     let image_url: string | undefined;
@@ -40,7 +41,7 @@ export const handler: Handlers = {
     }
 
     // Get the existing student
-    const existingStudent = await Database.getStudent(id);
+    const existingStudent = await Database.getStudent(oldId);
     if (!existingStudent) {
       return new Response("Student not found", { status: 404 });
     }
@@ -62,13 +63,43 @@ export const handler: Handlers = {
     }
 
     try {
-      await Database.updateStudent(id, updatedStudent);
-      return new Response(null, {
-        status: 303,
-        headers: {
-          Location: `/students/${id}`,
-        },
-      });
+      // If ID is being changed
+      if (newId && newId !== oldId) {
+        // Create new student with new ID
+        const newStudent = { ...existingStudent, ...updatedStudent, id: newId };
+        await Database.createStudentWithId(newId, newStudent);
+
+        // Update all related exams
+        const exams = await Database.getStudentExams(oldId);
+        for (const exam of exams) {
+          await Database.updateExam(exam.id, { student_id: newId });
+        }
+
+        // Update all related payments
+        const payments = await Database.getStudentPayments(oldId);
+        for (const payment of payments) {
+          await Database.updatePayment(payment.id, { student_id: newId });
+        }
+
+        // Delete old student
+        await Database.deleteStudent(oldId);
+
+        return new Response(null, {
+          status: 303,
+          headers: {
+            Location: `/students/${newId}`,
+          },
+        });
+      } else {
+        // Regular update without ID change
+        await Database.updateStudent(oldId, updatedStudent);
+        return new Response(null, {
+          status: 303,
+          headers: {
+            Location: `/students/${oldId}`,
+          },
+        });
+      }
     } catch (error) {
       console.error("Error updating student:", error);
       return new Response(JSON.stringify({ 
