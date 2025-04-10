@@ -8,8 +8,11 @@ interface StatisticsListProps {
   payments: Payment[];
 }
 
-export default function StatisticsList({ students, exams, payments }: StatisticsListProps) {
+export default function StatisticsList({ students: initialStudents, exams: initialExams, payments: initialPayments }: StatisticsListProps) {
   const [selectedPeriod, setSelectedPeriod] = useState("day");
+  const [students, setStudents] = useState(initialStudents);
+  const [exams, setExams] = useState(initialExams);
+  const [payments, setPayments] = useState(initialPayments);
   const [filteredStats, setFilteredStats] = useState({
     students: { total: 0, active: 0 },
     exams: { total: 0, passed: 0 },
@@ -32,12 +35,15 @@ export default function StatisticsList({ students, exams, payments }: Statistics
         break;
       case 'week':
         start.setDate(now.getDate() - 7);
+        start.setHours(0, 0, 0, 0);
         break;
       case 'month':
         start.setMonth(now.getMonth() - 1);
+        start.setHours(0, 0, 0, 0);
         break;
       case 'year':
         start.setFullYear(now.getFullYear() - 1);
+        start.setHours(0, 0, 0, 0);
         break;
       default:
         start.setHours(0, 0, 0, 0);
@@ -48,11 +54,17 @@ export default function StatisticsList({ students, exams, payments }: Statistics
 
   const isDateInRange = (date: string, range: { start: Date; end: Date }) => {
     const d = new Date(date);
+    d.setHours(0, 0, 0, 0); // Normalize time to midnight
     return d >= range.start && d <= range.end;
   };
 
-  const updateStatistics = (period: string) => {
-    const range = getDateRange(period);
+  const safeParseFloat = (value: string): number => {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
+  const updateStatistics = () => {
+    const range = getDateRange(selectedPeriod);
     
     // Filter data based on date range
     const filteredStudents = students.filter(s => isDateInRange(s.date_of_registration, range));
@@ -62,7 +74,7 @@ export default function StatisticsList({ students, exams, payments }: Statistics
     // Calculate statistics
     const activeStudents = filteredStudents.filter(s => s.status === "active").length;
     const passedExams = filteredExams.filter(e => e.result === "pass").length;
-    const totalPayments = filteredPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+    const totalPayments = filteredPayments.reduce((sum, p) => sum + safeParseFloat(p.amount), 0);
     
     // Calculate exam success rates
     const codeExams = filteredExams.filter(e => e.exam_type === "code");
@@ -77,8 +89,8 @@ export default function StatisticsList({ students, exams, payments }: Statistics
     // Calculate payment statistics
     const cashPayments = filteredPayments.filter(p => p.payment_type === "cash");
     const cardPayments = filteredPayments.filter(p => p.payment_type === "card");
-    const totalCashPayments = cashPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
-    const totalCardPayments = cardPayments.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+    const totalCashPayments = cashPayments.reduce((sum, p) => sum + safeParseFloat(p.amount), 0);
+    const totalCardPayments = cardPayments.reduce((sum, p) => sum + safeParseFloat(p.amount), 0);
     
     setFilteredStats({
       students: {
@@ -102,28 +114,80 @@ export default function StatisticsList({ students, exams, payments }: Statistics
     });
   };
 
+  // Fetch fresh data every 30 seconds
   useEffect(() => {
-    updateStatistics(selectedPeriod);
-  }, [selectedPeriod]);
+    const fetchData = async () => {
+      try {
+        const [studentsRes, examsRes, paymentsRes] = await Promise.all([
+          fetch('/api/students'),
+          fetch('/api/exams'),
+          fetch('/api/payments')
+        ]);
+        
+        const [newStudents, newExams, newPayments] = await Promise.all([
+          studentsRes.json(),
+          examsRes.json(),
+          paymentsRes.json()
+        ]);
+        
+        setStudents(newStudents);
+        setExams(newExams);
+        setPayments(newPayments);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Update statistics when period changes or when data changes
+  useEffect(() => {
+    updateStatistics();
+  }, [selectedPeriod, students, exams, payments]);
 
   const handleExport = async () => {
-    const zip = new JSZip();
+    try {
+      const zip = new JSZip();
+      
+      // Add CSV files to zip
+      zip.file("students.csv", convertToCSV(formattedStudents));
+      zip.file("exams.csv", convertToCSV(formattedExams));
+      zip.file("payments.csv", convertToCSV(formattedPayments));
+      
+      // Generate and download zip file
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `statistics_${selectedPeriod}_${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      alert("Une erreur est survenue lors de l'exportation des données.");
+    }
+  };
+
+  const convertToCSV = (data: Record<string, any>[]): string => {
+    if (data.length === 0) return "";
     
-    // Add CSV files to zip
-    zip.file("students.csv", formattedStudents);
-    zip.file("exams.csv", formattedExams);
-    zip.file("payments.csv", formattedPayments);
+    const headers = Object.keys(data[0]);
+    const rows = data.map(row => 
+      headers.map(header => {
+        const value = row[header];
+        if (value === null || value === undefined) return "";
+        if (typeof value === "string" && value.includes(",")) {
+          return `"${value.replace(/"/g, '""')}"`;
+        }
+        return value;
+      }).join(",")
+    );
     
-    // Generate and download zip file
-    const content = await zip.generateAsync({ type: "blob" });
-    const url = URL.createObjectURL(content);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "auto-ecole-data.zip";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    return [headers.join(","), ...rows].join("\n");
   };
 
   return (
