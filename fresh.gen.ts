@@ -40,6 +40,7 @@ import * as $MobileMenu from "./islands/MobileMenu.tsx";
 import * as $PasswordChangeForm from "./islands/PasswordChangeForm.tsx";
 import * as $PaymentsList from "./islands/PaymentsList.tsx";
 import * as $StatisticsList from "./islands/StatisticsList.tsx";
+import * as $StudentForm from "./islands/StudentForm.tsx";
 import * as $StudentsList from "./islands/StudentsList.tsx";
 import type { Manifest } from "$fresh/server.ts";
 
@@ -85,6 +86,7 @@ const manifest = {
     "./islands/PasswordChangeForm.tsx": $PasswordChangeForm,
     "./islands/PaymentsList.tsx": $PaymentsList,
     "./islands/StatisticsList.tsx": $StatisticsList,
+    "./islands/StudentForm.tsx": $StudentForm,
     "./islands/StudentsList.tsx": $StudentsList,
   },
   baseUrl: import.meta.url,

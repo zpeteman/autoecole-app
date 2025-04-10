@@ -3,6 +3,8 @@ export interface Student {
   name: string;
   phone: string;
   national_id: string;
+  student_id: string;
+  address: string;
   payment_status: 'complete' | 'partial' | 'not_defined';
   date_of_registration: string;
   status: 'active' | 'inactive';

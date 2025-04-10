@@ -274,325 +274,211 @@ export default async function StudentDetail(req: Request, { params }: { params: 
         }} />
       </Head>
       <Layout>
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Student Header */}
-          <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-            <div class="px-4 py-5 sm:px-6 flex items-center space-x-4">
-              <div class="flex-shrink-0">
-                {student.image_url ? (
-                  <img
-                    class="h-24 w-24 rounded-full object-cover"
-                    src={`/api/students?image=${student.image_url}`}
-                    alt={student.name}
-                  />
-                ) : (
-                  <div class="h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center">
-                    <span class="text-3xl font-medium text-gray-600">
-                      {student.name.charAt(0)}
-                    </span>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="p-6">
+              <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div class="flex items-center gap-4">
+                  <div class="w-20 h-20 rounded-full overflow-hidden bg-gray-200 flex-shrink-0">
+                    {student.image_url ? (
+                      <img 
+                        src={`/api/students?image=${student.image_url}`}
+                        alt={student.name} 
+                        class="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div class="w-full h-full flex items-center justify-center bg-gray-300 text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              <div class="flex-1">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">{student.name}</h3>
-                <p class="mt-1 max-w-2xl text-sm text-gray-500">
-                  ID: {student.id} | CIN: {student.national_id}
-                </p>
-                <div class="mt-2 flex items-center space-x-4">
-                  <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    student.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                  }`}>
-                    {student.status === "active" ? "Actif" : "Inactif"}
-                  </span>
-                  <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    paymentStatus === "complete" ? "bg-green-100 text-green-800" :
-                    paymentStatus === "partial" ? "bg-yellow-100 text-yellow-800" :
-                    "bg-red-100 text-red-800"
-                  }`}>
-                    {paymentStatus === "complete" ? "Paiement complet" :
-                     paymentStatus === "partial" ? "Paiement partiel" :
-                     "Paiement non défini"}
-                  </span>
+                  <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{student.name}</h1>
+                    <p class="text-sm text-gray-500">ID: {student.student_id}</p>
+                  </div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <a
+                    href={`/students/${student.id}/edit`}
+                    class="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                    Modifier
+                  </a>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      // @ts-ignore - exportStudentPDF is defined in the script tag
+                      window.exportStudentPDF();
+                    }}
+                    class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                    Exporter PDF
+                  </button>
                 </div>
               </div>
-              <div class="flex-shrink-0 space-x-2">
-                <button
-                  data-action="export-pdf"
-                  class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Exporter PDF
-                </button>
-                <a
-                  href={`/students/${student.id}/edit`}
-                  class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                  </svg>
-                  Modifier
-                </a>
-              </div>
-            </div>
-            <div class="border-t border-gray-200">
-              <dl>
-                <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                  <div class="px-4 py-5 sm:px-6">
-                    <h3 class="text-lg font-medium leading-6 text-gray-900">
-                      Informations de l'étudiant
-                    </h3>
-                    <p class="mt-1 max-w-2xl text-sm text-gray-500">
-                      Détails personnels et informations de contact.
-                    </p>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                  <div>
+                    <h2 class="text-lg font-medium text-gray-900">Informations personnelles</h2>
+                    <dl class="mt-2 grid grid-cols-1 gap-2">
+                      <div class="flex flex-col sm:flex-row sm:items-center py-2 border-b">
+                        <dt class="text-sm font-medium text-gray-500 sm:w-1/3">CIN</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:w-2/3">{student.national_id}</dd>
+                      </div>
+                      <div class="flex flex-col sm:flex-row sm:items-center py-2 border-b">
+                        <dt class="text-sm font-medium text-gray-500 sm:w-1/3">Téléphone</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:w-2/3">{student.phone}</dd>
+                      </div>
+                      <div class="flex flex-col sm:flex-row sm:items-center py-2 border-b">
+                        <dt class="text-sm font-medium text-gray-500 sm:w-1/3">Adresse</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:w-2/3">{student.address}</dd>
+                      </div>
+                      <div class="flex flex-col sm:flex-row sm:items-center py-2 border-b">
+                        <dt class="text-sm font-medium text-gray-500 sm:w-1/3">Date d'inscription</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:w-2/3">
+                          {new Date(student.date_of_registration).toLocaleDateString()}
+                        </dd>
+                      </div>
+                      {student.birthday && (
+                        <div class="flex flex-col sm:flex-row sm:items-center py-2 border-b">
+                          <dt class="text-sm font-medium text-gray-500 sm:w-1/3">Date de naissance</dt>
+                          <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:w-2/3">
+                            {new Date(student.birthday).toLocaleDateString()}
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
                   </div>
-                  <div class="border-t border-gray-200">
-                    <dl class="divide-y divide-gray-200">
-                      <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt class="text-sm font-medium text-gray-500">Nom complet</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{student.name}</dd>
-                      </div>
-                      <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt class="text-sm font-medium text-gray-500">Date de naissance</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          {student.birthday ? new Date(student.birthday).toLocaleDateString('fr-FR', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          }) : "Non spécifiée"}
-                        </dd>
-                      </div>
-                      <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt class="text-sm font-medium text-gray-500">CIN</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{student.national_id}</dd>
-                      </div>
-                      <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt class="text-sm font-medium text-gray-500">Téléphone</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{student.phone}</dd>
-                      </div>
-                      <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt class="text-sm font-medium text-gray-500">Date d'inscription</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          {new Date(student.date_of_registration).toLocaleDateString('fr-FR', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
-                        </dd>
-                      </div>
-                      <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt class="text-sm font-medium text-gray-500">Statut</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          <span class={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
+                </div>
+
+                <div class="space-y-4">
+                  <div>
+                    <h2 class="text-lg font-medium text-gray-900">Statut et paiements</h2>
+                    <dl class="mt-2 grid grid-cols-1 gap-2">
+                      <div class="flex flex-col sm:flex-row sm:items-center py-2 border-b">
+                        <dt class="text-sm font-medium text-gray-500 sm:w-1/3">Statut</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:w-2/3">
+                          <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             student.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
                           }`}>
                             {student.status === "active" ? "Actif" : "Inactif"}
                           </span>
                         </dd>
                       </div>
-                      <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt class="text-sm font-medium text-gray-500">Frais totaux</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{totalFees} DH</dd>
-                      </div>
-                      <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt class="text-sm font-medium text-gray-500">Montant payé</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{totalPaid} DH</dd>
-                      </div>
-                      <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt class="text-sm font-medium text-gray-500">Reste à payer</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{Math.max(0, totalFees - totalPaid)} DH</dd>
-                      </div>
-                      <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                        <dt class="text-sm font-medium text-gray-500">Statut du paiement</dt>
-                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                          <span class={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
+                      <div class="flex flex-col sm:flex-row sm:items-center py-2 border-b">
+                        <dt class="text-sm font-medium text-gray-500 sm:w-1/3">Statut de paiement</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:w-2/3">
+                          <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             student.payment_status === "complete" ? "bg-green-100 text-green-800" :
                             student.payment_status === "partial" ? "bg-yellow-100 text-yellow-800" :
-                            "bg-gray-100 text-gray-800"
+                            "bg-red-100 text-red-800"
                           }`}>
                             {student.payment_status === "complete" ? "Complet" :
                              student.payment_status === "partial" ? "Partiel" : "Non défini"}
                           </span>
                         </dd>
                       </div>
+                      <div class="flex flex-col sm:flex-row sm:items-center py-2 border-b">
+                        <dt class="text-sm font-medium text-gray-500 sm:w-1/3">Frais totaux</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:w-2/3">{totalFees} DH</dd>
+                      </div>
+                      <div class="flex flex-col sm:flex-row sm:items-center py-2 border-b">
+                        <dt class="text-sm font-medium text-gray-500 sm:w-1/3">Total payé</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:w-2/3">{totalPaid} DH</dd>
+                      </div>
+                      <div class="flex flex-col sm:flex-row sm:items-center py-2 border-b">
+                        <dt class="text-sm font-medium text-gray-500 sm:w-1/3">Reste à payer</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:w-2/3">{totalFees - totalPaid} DH</dd>
+                      </div>
                     </dl>
                   </div>
                 </div>
-              </dl>
-            </div>
-          </div>
-
-          {/* Hidden data for JavaScript */}
-          <div id="student-data" data-student={JSON.stringify(student)} class="hidden"></div>
-          <div id="exams-data" data-exams={JSON.stringify(studentExams)} class="hidden"></div>
-          <div id="payments-data" data-payments={JSON.stringify(studentPayments)} class="hidden"></div>
-
-          {/* Exams Section */}
-          <div class="mt-8">
-            <div class="sm:flex sm:items-center">
-              <div class="sm:flex-auto">
-                <h3 class="text-lg font-medium text-gray-900">Examens</h3>
-                <p class="mt-2 text-sm text-gray-700">
-                  Liste de tous les examens de l'étudiant.
-                </p>
               </div>
-              <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
-                <a
-                  href={`/exams/new?student_id=${student.id}`}
-                  class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                  <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Ajouter un examen
-                </a>
-              </div>
-            </div>
-            <div class="mt-4 flex flex-col">
-              <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-                  <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                    <table class="min-w-full divide-y divide-gray-300">
-                      <thead class="bg-gray-50">
-                        <tr>
-                          <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
-                            Type
-                          </th>
-                          <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                            Date
-                          </th>
-                          <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                            Résultat
-                          </th>
-                          <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                            Notes
-                          </th>
-                          <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                            <span class="sr-only">Actions</span>
-                          </th>
+
+              <div class="mt-8">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">Historique des examens</h2>
+                <div class="overflow-x-auto">
+                  <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Résultat</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                      {studentExams.map((exam) => (
+                        <tr key={exam.id}>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {exam.exam_type === "code" ? "Code" : "Conduite"}
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(exam.exam_date).toLocaleDateString()}
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              exam.result === "pass" ? "bg-green-100 text-green-800" :
+                              exam.result === "fail" ? "bg-red-100 text-red-800" :
+                              "bg-yellow-100 text-yellow-800"
+                            }`}>
+                              {exam.result === "pass" ? "Réussi" :
+                               exam.result === "fail" ? "Échoué" : "En attente"}
+                            </span>
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{exam.notes || "-"}</td>
                         </tr>
-                      </thead>
-                      <tbody class="divide-y divide-gray-200 bg-white">
-                        {studentExams.map((exam) => (
-                          <tr key={exam.id}>
-                            <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                              {exam.exam_type === "code" ? "Code" : "Conduite"}
-                            </td>
-                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              {new Date(exam.exam_date).toLocaleDateString()}
-                            </td>
-                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              <span class={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                                exam.result === "pass" ? "bg-green-100 text-green-800" :
-                                exam.result === "fail" ? "bg-red-100 text-red-800" :
-                                "bg-yellow-100 text-yellow-800"
-                              }`}>
-                                {exam.result === "pass" ? "Réussi" :
-                                 exam.result === "fail" ? "Échoué" :
-                                 "En attente"}
-                              </span>
-                            </td>
-                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              {exam.notes || "-"}
-                            </td>
-                            <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                              <a
-                                href={`/exams/${exam.id}/edit`}
-                                class="text-indigo-600 hover:text-indigo-900 inline-flex items-center"
-                              >
-                                <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                </svg>
-                                Modifier
-                              </a>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Payments Section */}
-          <div class="mt-8">
-            <div class="sm:flex sm:items-center">
-              <div class="sm:flex-auto">
-                <h3 class="text-lg font-medium text-gray-900">Paiements</h3>
-                <p class="mt-2 text-sm text-gray-700">
-                  Liste de tous les paiements de l'étudiant.
-                </p>
-              </div>
-              <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
-                <a
-                  href={`/payments/new?student_id=${student.id}`}
-                  class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                >
-                  <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Ajouter un paiement
-                </a>
-              </div>
-            </div>
-            <div class="mt-4 flex flex-col">
-              <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
-                  <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                    <table class="min-w-full divide-y divide-gray-300">
-                      <thead class="bg-gray-50">
-                        <tr>
-                          <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">
-                            Date
-                          </th>
-                          <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                            Montant
-                          </th>
-                          <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                            Type
-                          </th>
-                          <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                            <span class="sr-only">Actions</span>
-                          </th>
+              <div class="mt-8">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">Historique des paiements</h2>
+                <div class="overflow-x-auto">
+                  <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                      {studentPayments.map((payment) => (
+                        <tr key={payment.id}>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {new Date(payment.payment_date).toLocaleDateString()}
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payment.amount} DH</td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {payment.payment_type === "cash" ? "Espèces" : "Carte"}
+                          </td>
+                          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{payment.notes || "-"}</td>
                         </tr>
-                      </thead>
-                      <tbody class="divide-y divide-gray-200 bg-white">
-                        {studentPayments.map((payment) => (
-                          <tr key={payment.id}>
-                            <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
-                              {new Date(payment.payment_date).toLocaleDateString()}
-                            </td>
-                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              {payment.amount} DH
-                            </td>
-                            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                              {payment.payment_type === "cash" ? "Espèces" : "Carte"}
-                            </td>
-                            <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                              <a
-                                href={`/payments/${payment.id}/edit`}
-                                class="text-indigo-600 hover:text-indigo-900 inline-flex items-center"
-                              >
-                                <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                </svg>
-                                Modifier
-                              </a>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </Layout>
+      <div id="student-data" data-student={JSON.stringify(student)} style={{ display: 'none' }}></div>
+      <div id="exams-data" data-exams={JSON.stringify(studentExams)} style={{ display: 'none' }}></div>
+      <div id="payments-data" data-payments={JSON.stringify(studentPayments)} style={{ display: 'none' }}></div>
     </>
   );
 } 
