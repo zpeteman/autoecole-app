@@ -56,13 +56,15 @@ export default function PaymentsList() {
       const selectedDateObj = new Date(selectedDate);
       selectedDateObj.setHours(0, 0, 0, 0);
       
-      const hasPaymentsOnDate = studentPayments.some(payment => {
+      // Filter the student's payments to only include those matching the selected date
+      const filteredStudentPayments = studentPayments.filter(payment => {
         const paymentDate = new Date(payment.payment_date);
         paymentDate.setHours(0, 0, 0, 0);
         return paymentDate.getTime() === selectedDateObj.getTime();
       });
       
-      return matchesSearch && hasPaymentsOnDate;
+      // Only include students who have payments on the selected date
+      return matchesSearch && filteredStudentPayments.length > 0;
     }
     
     return matchesSearch;
@@ -209,7 +211,18 @@ export default function PaymentsList() {
               const student = students.find((s) => s.id === studentId);
               if (!student) return null;
 
-              const totalAmount = studentPayments.reduce((sum: number, payment: Payment) => sum + parseFloat(payment.amount), 0);
+              // Filter payments to only show those matching the selected date
+              const displayPayments = selectedDate 
+                ? studentPayments.filter(payment => {
+                    const paymentDate = new Date(payment.payment_date);
+                    paymentDate.setHours(0, 0, 0, 0);
+                    const selectedDateObj = new Date(selectedDate);
+                    selectedDateObj.setHours(0, 0, 0, 0);
+                    return paymentDate.getTime() === selectedDateObj.getTime();
+                  })
+                : studentPayments;
+
+              const totalAmount = displayPayments.reduce((sum: number, payment: Payment) => sum + parseFloat(payment.amount), 0);
 
               return (
                 <div key={studentId} class="bg-white rounded-lg shadow-md overflow-hidden">
@@ -241,7 +254,7 @@ export default function PaymentsList() {
                     </div>
                   </div>
                   <div class="divide-y">
-                    {studentPayments.map((payment: Payment) => (
+                    {displayPayments.map((payment: Payment) => (
                       <div key={payment.id} class="p-4">
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                           <div>
