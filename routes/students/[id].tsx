@@ -44,63 +44,72 @@ export default async function StudentDetail(req: Request, { params }: { params: 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
         <script dangerouslySetInnerHTML={{
           __html: `
-            function exportStudentPDF() {
-              // @ts-ignore - jspdf is loaded from CDN
-              const { jsPDF } = window.jspdf;
+            // Wait for the DOM to be fully loaded
+            document.addEventListener('DOMContentLoaded', function() {
+              // Initialize jsPDF
+              window.jspdf = window.jspdf || {};
+              window.jspdf.jsPDF = window.jspdf.jsPDF || window.jspdf;
               
-              // Create a new PDF document
-              // @ts-ignore - jspdf is loaded from CDN
-              const doc = new jsPDF();
-              
-              // Get student data
-              const studentDataElement = document.getElementById('student-data');
-              const examsDataElement = document.getElementById('exams-data');
-              const paymentsDataElement = document.getElementById('payments-data');
-              
-              if (!studentDataElement?.dataset?.student || !examsDataElement?.dataset?.exams || !paymentsDataElement?.dataset?.payments) {
-                console.error('Required data elements not found');
-                return;
+              // Add click handler for export button
+              const exportButton = document.querySelector('[data-action="export-pdf"]');
+              if (exportButton) {
+                exportButton.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  exportStudentPDF();
+                });
               }
+            });
 
-              const studentData = JSON.parse(studentDataElement.dataset.student);
-              const examsData = JSON.parse(examsDataElement.dataset.exams);
-              const paymentsData = JSON.parse(paymentsDataElement.dataset.payments);
-              
-              // Add title with styling
-              // @ts-ignore - jspdf methods
-              doc.setFillColor(66, 139, 202);
-              // @ts-ignore - jspdf methods
-              doc.rect(0, 0, 210, 30, 'F');
-              
-              // Add logo
+            function exportStudentPDF() {
               try {
-                // @ts-ignore - jspdf methods
-                doc.addImage('/favicon.png', 'PNG', 20, 5, 20, 20);
-              } catch (err) {
-                console.error('Error adding logo:', err);
-              }
-              
-              // @ts-ignore - jspdf methods
-              doc.setTextColor(255, 255, 255);
-              // @ts-ignore - jspdf methods
-              doc.setFontSize(24);
-              // @ts-ignore - jspdf methods
-              doc.text("Fiche d'étudiant", 105, 20, { align: "center" });
-              
-              // Reset text color
-              // @ts-ignore - jspdf methods
-              doc.setTextColor(0, 0, 0);
-              
-              let currentY = 40;
-              
-              function continueWithPDF() {
+                // @ts-ignore - jspdf is loaded from CDN
+                const { jsPDF } = window.jspdf;
+                
+                // Create a new PDF document
+                const doc = new jsPDF();
+                
+                // Get student data
+                const studentDataElement = document.getElementById('student-data');
+                const examsDataElement = document.getElementById('exams-data');
+                const paymentsDataElement = document.getElementById('payments-data');
+                
+                if (!studentDataElement?.dataset?.student || !examsDataElement?.dataset?.exams || !paymentsDataElement?.dataset?.payments) {
+                  console.error('Required data elements not found');
+                  return;
+                }
+
+                const studentData = JSON.parse(studentDataElement.dataset.student);
+                const examsData = JSON.parse(examsDataElement.dataset.exams);
+                const paymentsData = JSON.parse(paymentsDataElement.dataset.payments);
+                
+                // Add title with styling
+                doc.setFillColor(66, 139, 202);
+                doc.rect(0, 0, 210, 30, 'F');
+                
+                // Add logo
+                try {
+                  doc.addImage('/favicon.png', 'PNG', 20, 5, 20, 20);
+                } catch (err) {
+                  console.error('Error adding logo:', err);
+                }
+                
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(24);
+                doc.text("Fiche d'étudiant", 105, 20, { align: "center" });
+                
+                // Reset text color
+                doc.setTextColor(0, 0, 0);
+                
+                let currentY = 40;
+                
                 // Add student information in a more compact layout
-                // @ts-ignore - jspdf methods
                 doc.setFontSize(12);
                 const info = [
+                  ["ID Étudiant:", studentData.student_id || "Non défini"],
                   ["Nom:", studentData.name],
                   ["Téléphone:", studentData.phone],
                   ["CIN:", studentData.national_id],
+                  ["Adresse:", studentData.address || "Non spécifiée"],
                   ["Statut:", studentData.status === "active" ? "Actif" : "Inactif"],
                   ["Statut de paiement:", studentData.payment_status === "complete" ? "Complet" : 
                     studentData.payment_status === "partial" ? "Partiel" : "Non défini"],
@@ -110,7 +119,6 @@ export default async function StudentDetail(req: Request, { params }: { params: 
                 ];
                 
                 // Create a table for student information
-                // @ts-ignore - jspdf-autotable methods
                 doc.autoTable({
                   startY: currentY,
                   head: [["Information", "Valeur"]],
@@ -123,11 +131,8 @@ export default async function StudentDetail(req: Request, { params }: { params: 
                 
                 // Add exams information
                 const examY = doc.lastAutoTable.finalY + 10;
-                // @ts-ignore - jspdf methods
                 doc.setFontSize(14);
-                // @ts-ignore - jspdf methods
                 doc.setTextColor(66, 139, 202);
-                // @ts-ignore - jspdf methods
                 doc.text("Historique des examens", 20, examY);
                 
                 if (examsData.length > 0) {
@@ -140,7 +145,6 @@ export default async function StudentDetail(req: Request, { params }: { params: 
                     exam.notes || ""
                   ]);
                   
-                  // @ts-ignore - jspdf-autotable methods
                   doc.autoTable({
                     startY: examY + 5,
                     head: examHeaders,
@@ -150,21 +154,15 @@ export default async function StudentDetail(req: Request, { params }: { params: 
                     styles: { fontSize: 10 }
                   });
                 } else {
-                  // @ts-ignore - jspdf methods
                   doc.setFontSize(10);
-                  // @ts-ignore - jspdf methods
                   doc.setTextColor(0, 0, 0);
-                  // @ts-ignore - jspdf methods
                   doc.text("Aucun examen enregistré", 20, examY + 10);
                 }
                 
                 // Add payments information
                 const paymentY = doc.lastAutoTable.finalY + 10;
-                // @ts-ignore - jspdf methods
                 doc.setFontSize(14);
-                // @ts-ignore - jspdf methods
                 doc.setTextColor(66, 139, 202);
-                // @ts-ignore - jspdf methods
                 doc.text("Historique des paiements", 20, paymentY);
                 
                 if (paymentsData.length > 0) {
@@ -176,7 +174,6 @@ export default async function StudentDetail(req: Request, { params }: { params: 
                     payment.notes || ""
                   ]);
                   
-                  // @ts-ignore - jspdf-autotable methods
                   doc.autoTable({
                     startY: paymentY + 5,
                     head: paymentHeaders,
@@ -191,39 +188,25 @@ export default async function StudentDetail(req: Request, { params }: { params: 
                   const totalFees = studentData.total_fees || 0;
                   const remainingFees = totalFees - totalPayments;
                   
-                  // @ts-ignore - jspdf methods
                   doc.setFontSize(10);
-                  // @ts-ignore - jspdf methods
                   doc.setTextColor(0, 0, 0);
-                  // @ts-ignore - jspdf methods
                   doc.text("Total des paiements: " + totalPayments.toFixed(2) + " DH", 20, doc.lastAutoTable.finalY + 10);
-                  // @ts-ignore - jspdf methods
                   doc.text("Frais totaux: " + totalFees.toFixed(2) + " DH", 20, doc.lastAutoTable.finalY + 15);
-                  // @ts-ignore - jspdf methods
                   doc.text("Reste à payer: " + remainingFees.toFixed(2) + " DH", 20, doc.lastAutoTable.finalY + 20);
                 } else {
-                  // @ts-ignore - jspdf methods
                   doc.setFontSize(10);
-                  // @ts-ignore - jspdf methods
                   doc.setTextColor(0, 0, 0);
-                  // @ts-ignore - jspdf methods
                   doc.text("Aucun paiement enregistré", 20, paymentY + 10);
-                  // @ts-ignore - jspdf methods
                   doc.text("Frais totaux: " + (studentData.total_fees || 0) + " DH", 20, paymentY + 15);
-                  // @ts-ignore - jspdf methods
                   doc.text("Reste à payer: " + (studentData.total_fees || 0) + " DH", 20, paymentY + 20);
                 }
                 
                 // Add footer with page numbers
                 const pageCount = doc.internal.getNumberOfPages();
                 for (let i = 1; i <= pageCount; i++) {
-                  // @ts-ignore - jspdf methods
                   doc.setPage(i);
-                  // @ts-ignore - jspdf methods
                   doc.setFontSize(8);
-                  // @ts-ignore - jspdf methods
                   doc.setTextColor(128, 128, 128);
-                  // @ts-ignore - jspdf methods
                   doc.text(
                     'Page ' + i + ' sur ' + pageCount,
                     doc.internal.pageSize.width / 2,
@@ -234,47 +217,21 @@ export default async function StudentDetail(req: Request, { params }: { params: 
                 
                 // Save the PDF
                 doc.save(studentData.name.replace(/\s+/g, '_') + "_fiche.pdf");
-              }
-
-              // Handle student image
-              if (studentData.image_url) {
-                const img = new Image();
-                img.crossOrigin = "Anonymous";
-                img.onload = function() {
-                  try {
-                    // @ts-ignore - jspdf methods
-                    doc.addImage(img, 'JPEG', 20, currentY, 30, 30);
-                    currentY += 35;
-                  } catch (err) {
-                    console.error('Error adding image to PDF:', err);
-                  }
-                  continueWithPDF();
-                };
-                img.onerror = function() {
-                  console.error('Error loading image');
-                  continueWithPDF();
-                };
-                img.src = \`/api/students?image=\${studentData.image_url}\`;
-              } else {
-                continueWithPDF();
+              } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('Une erreur est survenue lors de la génération du PDF');
               }
             }
-
-            // Add click handler for export button when the DOM is loaded
-            document.addEventListener('DOMContentLoaded', function() {
-              const exportButton = document.querySelector('[data-action="export-pdf"]');
-              if (exportButton) {
-                exportButton.addEventListener('click', function(e) {
-                  e.preventDefault();
-                  exportStudentPDF();
-                });
-              }
-            });
           `
         }} />
       </Head>
       <Layout>
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Hidden data elements for PDF export */}
+          <div id="student-data" data-student={JSON.stringify(student)} class="hidden"></div>
+          <div id="exams-data" data-exams={JSON.stringify(studentExams)} class="hidden"></div>
+          <div id="payments-data" data-payments={JSON.stringify(studentPayments)} class="hidden"></div>
+
           <div class="bg-white rounded-lg shadow-md overflow-hidden">
             <div class="p-6">
               <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -296,7 +253,7 @@ export default async function StudentDetail(req: Request, { params }: { params: 
                   </div>
                   <div>
                     <h1 class="text-2xl font-bold text-gray-900">{student.name}</h1>
-                    <p class="text-sm text-gray-500">ID: {student.student_id}</p>
+                    <p class="text-sm text-gray-500">ID Étudiant: {student.student_id || "Non défini"}</p>
                   </div>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -310,11 +267,7 @@ export default async function StudentDetail(req: Request, { params }: { params: 
                     Modifier
                   </a>
                   <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      // @ts-ignore - exportStudentPDF is defined in the script tag
-                      window.exportStudentPDF();
-                    }}
+                    data-action="export-pdf"
                     class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -405,7 +358,18 @@ export default async function StudentDetail(req: Request, { params }: { params: 
               </div>
 
               <div class="mt-8">
-                <h2 class="text-lg font-medium text-gray-900 mb-4">Historique des examens</h2>
+                <div class="flex justify-between items-center mb-4">
+                  <h2 class="text-lg font-medium text-gray-900">Historique des examens</h2>
+                  <a
+                    href={`/exams/new?student=${student.id}`}
+                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    Ajouter un examen
+                  </a>
+                </div>
                 <div class="overflow-x-auto">
                   <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -444,7 +408,18 @@ export default async function StudentDetail(req: Request, { params }: { params: 
               </div>
 
               <div class="mt-8">
-                <h2 class="text-lg font-medium text-gray-900 mb-4">Historique des paiements</h2>
+                <div class="flex justify-between items-center mb-4">
+                  <h2 class="text-lg font-medium text-gray-900">Historique des paiements</h2>
+                  <a
+                    href={`/payments/new?student=${student.id}`}
+                    class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    Ajouter un paiement
+                  </a>
+                </div>
                 <div class="overflow-x-auto">
                   <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
@@ -476,9 +451,6 @@ export default async function StudentDetail(req: Request, { params }: { params: 
           </div>
         </div>
       </Layout>
-      <div id="student-data" data-student={JSON.stringify(student)} style={{ display: 'none' }}></div>
-      <div id="exams-data" data-exams={JSON.stringify(studentExams)} style={{ display: 'none' }}></div>
-      <div id="payments-data" data-payments={JSON.stringify(studentPayments)} style={{ display: 'none' }}></div>
     </>
   );
 } 

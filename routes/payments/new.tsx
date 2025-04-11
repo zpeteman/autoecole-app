@@ -3,7 +3,9 @@ import Layout from "../../components/Layout.tsx";
 import { Database } from "../../db/kv.ts";
 import { Student } from "../../db/types.ts";
 
-export default async function NewPayment() {
+export default async function NewPayment(req: Request) {
+  const url = new URL(req.url);
+  const preSelectedStudentId = url.searchParams.get("student");
   const students = await Database.listStudents();
 
   return (
@@ -50,10 +52,11 @@ export default async function NewPayment() {
                                 name="student_id"
                                 required
                                 class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                value={preSelectedStudentId || ""}
                               >
                                 <option value="">Sélectionnez un étudiant</option>
                                 {students.map((student: Student) => (
-                                  <option value={student.id}>
+                                  <option value={student.id} selected={student.id === preSelectedStudentId}>
                                     {student.name} ({student.national_id})
                                   </option>
                                 ))}

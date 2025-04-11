@@ -79,24 +79,31 @@ export const handler: Handlers = {
       }
 
       // Get required fields
+      const student_id = formData.get("student_id") as string;
       const name = formData.get("name") as string;
       const phone = formData.get("phone") as string;
       const national_id = formData.get("national_id") as string;
       const status = formData.get("status") as "active" | "inactive";
       const payment_status = formData.get("payment_status") as "complete" | "partial" | "not_defined";
       const birthday = formData.get("birthday") as string;
+      const address = formData.get("address") as string;
 
       // Validate required fields
-      if (!name || !phone || !national_id || !status || !payment_status) {
-        console.error("Missing required fields:", { name, phone, national_id, status, payment_status });
+      if (!student_id || !name || !phone || !national_id || !status || !payment_status) {
+        console.error("Missing required fields:", { student_id, name, phone, national_id, status, payment_status });
         return new Response(JSON.stringify({ error: "Missing required fields" }), {
           status: 400,
           headers: { "Content-Type": "application/json" },
         });
       }
 
+      // Generate a unique internal ID
+      const id = crypto.randomUUID();
+
       // Create the new student
-      const newStudent: Omit<Student, "id"> = {
+      const newStudent: Student = {
+        id,
+        student_id,
         name,
         phone,
         national_id,
@@ -106,11 +113,12 @@ export const handler: Handlers = {
         birthday,
         date_of_registration: new Date().toISOString().split('T')[0],
         image_url,
+        address,
       };
 
       console.log("Creating student with data:", newStudent);
 
-      const student = await Database.createStudent(newStudent);
+      const student = await Database.createStudentWithId(id, newStudent);
       console.log("Student created successfully:", student);
       
       return new Response(null, {

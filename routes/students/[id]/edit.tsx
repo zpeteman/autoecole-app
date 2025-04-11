@@ -83,17 +83,17 @@ export default async function EditStudent(req: Request, ctx: { params: { id: str
 
                           <div class="sm:col-span-3">
                             <label
-                              for="id"
+                              for="student_id"
                               class="block text-sm font-medium text-gray-700"
                             >
-                              ID de l'étudiant
+                              ID Étudiant
                             </label>
                             <div class="mt-1">
                               <input
                                 type="text"
-                                name="id"
-                                id="id"
-                                value={student.id}
+                                name="student_id"
+                                id="student_id"
+                                value={student.student_id || ""}
                                 required
                                 class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                               />
@@ -235,6 +235,24 @@ export default async function EditStudent(req: Request, ctx: { params: { id: str
                                 step="0.01"
                                 class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                               />
+                            </div>
+                          </div>
+
+                          <div class="sm:col-span-6">
+                            <label
+                              for="address"
+                              class="block text-sm font-medium text-gray-700"
+                            >
+                              Adresse
+                            </label>
+                            <div class="mt-1">
+                              <textarea
+                                name="address"
+                                id="address"
+                                rows="3"
+                                required
+                                class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                              >{student.address || ""}</textarea>
                             </div>
                           </div>
                         </div>

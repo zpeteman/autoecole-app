@@ -1,13 +1,46 @@
 import { useState, useEffect } from "preact/hooks";
 import Layout from "../components/Layout.tsx";
 import { Student } from "../db/types.ts";
-import { formatStudentsForExport, convertToCSV } from "../utils/export.ts";
+
+type StudentCSVData = {
+  "ID Étudiant": string;
+  "Nom": string;
+  "CIN": string;
+  "Téléphone": string;
+  "Adresse": string;
+  "Date d'inscription": string;
+  "Date de naissance": string;
+  "Statut": string;
+  "Statut de paiement": string;
+  "Frais totaux": number;
+};
 
 export function StudentsList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleDelete = async (studentId: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cet étudiant ?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/students/${studentId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete student");
+      }
+
+      // Remove the student from the local state
+      setStudents(students.filter(s => s.id !== studentId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Une erreur est survenue lors de la suppression");
+    }
+  };
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -40,22 +73,50 @@ export function StudentsList() {
       student.name.toLowerCase().includes(searchLower) ||
       student.national_id.toLowerCase().includes(searchLower) ||
       student.phone.toLowerCase().includes(searchLower) ||
-      student.id.toLowerCase().includes(searchLower)
+      student.student_id.toLowerCase().includes(searchLower)
     );
   });
 
-  // Format students for export
-  const formattedStudents = formatStudentsForExport(filteredStudents);
-
   // Handle export
   const handleExport = () => {
-    const csvContent = convertToCSV(formattedStudents);
+    // Format the data for CSV
+    const formattedData: StudentCSVData[] = filteredStudents.map(student => ({
+      "ID Étudiant": student.student_id || "",
+      "Nom": student.name,
+      "CIN": student.national_id,
+      "Téléphone": student.phone,
+      "Adresse": student.address || "",
+      "Date d'inscription": new Date(student.date_of_registration).toLocaleDateString(),
+      "Date de naissance": student.birthday ? new Date(student.birthday).toLocaleDateString() : "",
+      "Statut": student.status === "active" ? "Actif" : "Inactif",
+      "Statut de paiement": student.payment_status === "complete" ? "Complet" : 
+                           student.payment_status === "partial" ? "Partiel" : "Non défini",
+      "Frais totaux": student.total_fees || 0
+    }));
+
+    // Create CSV content
+    const headers = Object.keys(formattedData[0]) as (keyof StudentCSVData)[];
+    const csvRows = [
+      headers.join(','),
+      ...formattedData.map(row => 
+        headers.map(header => {
+          const value = row[header];
+          // Handle values that contain commas or quotes
+          if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          return value;
+        }).join(',')
+      )
+    ];
+    const csvContent = csvRows.join('\n');
+
+    // Create and download the file
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
     link.setAttribute('download', 'etudiants.csv');
-    link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -138,7 +199,7 @@ export function StudentsList() {
               type="text"
               id="search"
               class="block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-              placeholder="Rechercher par nom, CIN, téléphone ou ID..."
+              placeholder="Rechercher par nom, CIN, téléphone ou ID étudiant..."
               value={searchTerm}
               onChange={(e) => setSearchTerm((e.target as HTMLInputElement).value)}
             />
@@ -152,7 +213,7 @@ export function StudentsList() {
               <thead class="bg-gray-50">
                 <tr>
                   <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Photo</th>
-                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">ID</th>
+                  <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">ID Étudiant</th>
                   <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">CIN</th>
                   <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Nom</th>
                   <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Téléphone</th>
@@ -183,7 +244,7 @@ export function StudentsList() {
                       </div>
                     </td>
                     <td class="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">
-                      {student.id}
+                      {student.student_id}
                     </td>
                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{student.national_id}</td>
                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{student.name}</td>
@@ -196,13 +257,24 @@ export function StudentsList() {
                       </span>
                     </td>
                     <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                      <a href={`/students/${student.id}`} class="text-indigo-600 hover:text-indigo-900 inline-flex items-center">
-                        <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        Détails
-                      </a>
+                      <div class="flex justify-end space-x-2">
+                        <a href={`/students/${student.id}`} class="text-indigo-600 hover:text-indigo-900 inline-flex items-center">
+                          <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          Voir
+                        </a>
+                        <button
+                          onClick={() => handleDelete(student.id)}
+                          class="text-red-600 hover:text-red-900 inline-flex items-center"
+                        >
+                          <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Supprimer
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -235,7 +307,7 @@ export function StudentsList() {
                     </div>
                     <div class="ml-4">
                       <h3 class="text-lg font-medium text-gray-900">{student.name}</h3>
-                      <p class="text-sm text-gray-500">ID: {student.id}</p>
+                      <p class="text-sm text-gray-500">ID: {student.student_id}</p>
                     </div>
                     <div class="ml-auto">
                       <span class={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${

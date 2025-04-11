@@ -1,11 +1,44 @@
 import { useState, useEffect } from "preact/hooks";
 import { Student, Exam, Payment } from "../db/types.ts";
 import { formatStudentsForExport, formatExamsForExport, formatPaymentsForExport } from "../utils/export.ts";
+import JSZip from "jszip";
 
 interface StatisticsListProps {
   students: Student[];
   exams: Exam[];
   payments: Payment[];
+}
+
+interface StudentCSVData {
+  id: string;
+  name: string;
+  phone: string;
+  national_id: string;
+  status: string;
+  payment_status: string;
+  date_of_registration: string;
+  birthday: string;
+  total_fees: number;
+}
+
+interface ExamCSVData {
+  id: string;
+  student_name: string;
+  student_id: string;
+  exam_type: string;
+  exam_date: string;
+  result: string;
+  notes: string;
+}
+
+interface PaymentCSVData {
+  id: string;
+  student_name: string;
+  student_id: string;
+  amount: number;
+  payment_date: string;
+  payment_type: string;
+  notes: string;
 }
 
 export default function StatisticsList({ students: initialStudents, exams: initialExams, payments: initialPayments }: StatisticsListProps) {
@@ -21,9 +54,9 @@ export default function StatisticsList({ students: initialStudents, exams: initi
   });
 
   // Format data for export
-  const formattedStudents = formatStudentsForExport(students);
-  const formattedExams = formatExamsForExport(exams, students);
-  const formattedPayments = formatPaymentsForExport(payments, students);
+  const formattedStudents = formatStudentsForExport(students) as StudentCSVData[];
+  const formattedExams = formatExamsForExport(exams, students) as ExamCSVData[];
+  const formattedPayments = formatPaymentsForExport(payments, students) as PaymentCSVData[];
 
   const getDateRange = (period: string) => {
     const now = new Date();
@@ -172,7 +205,7 @@ export default function StatisticsList({ students: initialStudents, exams: initi
     }
   };
 
-  const convertToCSV = (data: Record<string, any>[]): string => {
+  const convertToCSV = <T extends Record<string, any>>(data: T[]): string => {
     if (data.length === 0) return "";
     
     const headers = Object.keys(data[0]);
